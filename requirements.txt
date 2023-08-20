@@ -1,0 +1,13 @@
+numpy
+pandas
+matplotlib
+scikit-learn
+torch
+torchvision
+timm
+einops
+tensorboard_logger
+opencv-python
+pillow
+addict
+yapf

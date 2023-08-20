@@ -4,7 +4,188 @@ from utils.utils import AverageMeter,warmup_learning_rate, accuracy, save_model
 import sys
 import time
 import numpy as np
-from config.linear import parse_option
+from config.config_linear_competition import parse_option
 from utils.utils_competition import set_loader_competition, set_model_competition_first, set_optimizer, adjust_learning_rate, accuracy_multilabel
 from sklearn.metrics import average_precision_score,roc_auc_score, classification_report
 import pandas as pd
+
+import os
+def train_OCT_multilabel(train_loader, model, criterion, optimizer, epoch, opt):
+    """one epoch training"""
+    # model.eval()
+    # classifier.train()
+    model.train()
+
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+    losses = AverageMeter()
+    top1 = AverageMeter()
+    device = opt.device
+    end = time.time()
+    for idx, (image, bio_tensor) in enumerate(train_loader):
+        data_time.update(time.time() - end)
+
+        images = image.to(device)
+
+        labels = bio_tensor
+        labels = labels.float()
+        bsz = labels.shape[0]
+        labels=labels.to(device)
+        # warm-up learning rate
+        warmup_learning_rate(opt, epoch, idx, len(train_loader), optimizer)
+
+
+        with torch.cuda.amp.autocast(enabled=opt.amp):
+            output = model(images)
+            loss = criterion(output, labels)
+
+        # update metric
+        losses.update(loss.item(), bsz)
+
+        # SGD
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        # measure elapsed time
+        batch_time.update(time.time() - end)
+        end = time.time()
+
+        # print info
+        if (idx + 1) % opt.print_freq == 0:
+            print('Train: [{0}][{1}/{2}]\t'.format(
+                epoch, idx + 1, len(train_loader)))
+            sys.stdout.flush()
+
+    return losses.avg, top1.avg
+
+def validate_multilabel(val_loader, model, criterion, opt):
+    """validation"""
+    model.eval()
+    # classifier.eval()
+    device = opt.device
+    batch_time = AverageMeter()
+    losses = AverageMeter()
+    top1 = AverageMeter()
+    label_list = []
+    out_list = []
+    with torch.no_grad():
+        end = time.time()
+        for idx, (image, bio_tensor) in enumerate(val_loader):
+            images = image.float().to(device)
+
+            labels = bio_tensor
+            labels = labels.float()
+            print(idx)
+            label_list.append(labels.squeeze().detach().cpu().numpy())
+            labels = labels.to(device)
+            bsz = labels.shape[0]
+
+            # forward
+            # output = classifier(model.encoder(images))
+
+            loss = criterion(output, labels)
+            output = torch.round(torch.sigmoid(output))
+
+            # compute output
+            with torch.cuda.amp.autocast(enabled=opt.amp):
+                output = model(images)
+                loss = criterion(output, labels)
+                output = torch.round(torch.sigmoid(output))
+
+            out_list.append(output.squeeze().detach().cpu().numpy())
+            # update metric
+            # losses.update(loss.item(), bsz)
+
+            # measure elapsed time
+            batch_time.update(time.time() - end)
+            end = time.time()
+
+
+    label_array = np.array(label_list)
+    out_array = np.array(out_list)
+    out_array = np.concatenate(out_list, axis=0)
+    r = roc_auc_score(label_array, out_array, average='macro')
+
+
+    return losses.avg, r
+
+
+
+def test_multilabel(val_loader, model, criterion, opt):
+    """validation"""
+    model.eval()
+    # classifier.eval()
+    device = opt.device
+    batch_time = AverageMeter()
+    losses = AverageMeter()
+    top1 = AverageMeter()
+    # label_list = []
+    out_list = []
+    with torch.no_grad():
+        end = time.time()
+        for idx, (image, img_name) in enumerate(val_loader):
+            images = image.float().to(device)
+
+            print(f"idx:{idx}")
+
+            # compute output
+            with torch.cuda.amp.autocast(enabled=opt.amp):
+                output = model(images)
+                output = torch.round(torch.sigmoid(output))
+
+            
+            output = output.squeeze().detach().cpu().numpy().tolist()
+            row = img_name + output
+            print(f"row:{row}")
+            out_list.append(row)
+
+
+            # measure elapsed time
+            batch_time.update(time.time() - end)
+            end = time.time()
+
+    # out_array = np.array(out_list)
+    # out_array = np.concatenate(out_list, axis=0)
+
+    return out_list
+
+def main_multilabel_competition():
+    best_acc = 0
+    opt = parse_option()
+
+    # build data loader
+    device = opt.device
+    train_loader, val_loader, test_loader = set_loader_competition(opt)
+
+    prediction = []
+    # training routine
+    for i in range(0,1):
+        model, criterion = set_model_competition_first(opt)
+
+        optimizer = set_optimizer(opt, model)
+        for epoch in range(1, opt.epochs + 1):
+            adjust_learning_rate(opt, optimizer, epoch)
+
+            # train for one epoch
+            time1 = time.time()
+            loss, acc = train_OCT_multilabel(train_loader, model, criterion,
+                              optimizer, epoch, opt)
+            time2 = time.time()
+            print('Train epoch {}, total time {:.2f}, accuracy:{:.2f}, loss:{:.2f}'.format(
+                epoch, time2 - time1, acc, loss))
+            
+            if epoch % opt.save_freq == 0:
+                save_file = os.path.join(
+                    opt.save_folder, 'ckpt_phase_2_epoch_{epoch}.pth'.format(epoch=epoch))
+                save_model(model, optimizer, opt, epoch, save_file)
+
+
+        out_list = test_multilabel(test_loader, model, criterion, opt)
+        prediction = out_list
+
+    df = pd.DataFrame(prediction, columns=['Path (Trial/Image Type/Subject/Visit/Eye/Image Name)',
+                                            'B1', 'B2', 'B3', 'B4', 'B5', 'B6'])
+
+    # Lưu DataFrame thành tệp CSV
+    df.to_csv('./prediction.csv', index=False)

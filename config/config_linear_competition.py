@@ -1,12 +1,12 @@
-
 import argparse
 import math
+import os
 def parse_option():
     parser = argparse.ArgumentParser('argument for training')
 
     parser.add_argument('--print_freq', type=int, default=10,
                         help='print frequency')
-    parser.add_argument('--save_freq', type=int, default=50,
+    parser.add_argument('--save_freq', type=int, default=3,
                         help='save frequency')
     parser.add_argument('--batch_size', type=int, default=128,
                         help='batch_size')
@@ -14,12 +14,8 @@ def parse_option():
                         help='num of workers to use')
     parser.add_argument('--epochs', type=int, default=25,
                         help='number of training epochs')
-    parser.add_argument('--n_cls', type=int, default=2,
-                        help='number of training epochs')
-    parser.add_argument('--super', type=int, default=0,
-                        help='number of training epochs')
-    parser.add_argument('--type', type=int, default=0,
-                        help='number of training epochs')
+    parser.add_argument('--save_folder', type=str, default='./save_linear')
+
     # optimization
     parser.add_argument('--learning_rate', type=float, default=0.001,
                         help='learning rate')
@@ -35,20 +31,67 @@ def parse_option():
                         help='momentum')
     parser.add_argument('--device', type=str, default='cuda:0')
     parser.add_argument('--parallel', type=int, default=1, help='data parallel')
+    
     # model dataset
-    parser.add_argument('--model', type=str, default='resnet50')
     parser.add_argument('--train_csv_path', type=str, default='train data csv')
+    parser.add_argument('--val_csv_path', type=str, default='val data csv')
     parser.add_argument('--test_csv_path', type=str, default='test data csv')
+
     parser.add_argument('--train_image_path', type=str, default='/data/Datasets')
+    parser.add_argument('--val_image_path', type=str, default='/data/Datasets')
     parser.add_argument('--test_image_path', type=str, default='/data/Datasets')
-    # parser.add_argument('--results_dir_contrastive', type=str, default='/home/kiran/Desktop/Dev/SupCon_OCT_Clinical/results.txt')
+
     parser.add_argument('--img_dir', type=str, default='image directory')
-    parser.add_argument('--model_type', type=str, default='bcva')
-    parser.add_argument('--multi', type=int, default=0)
+    # parser.add_argument('--model_type', type=str, default='bcva')
+    # parser.add_argument('--multi', type=int, default=0)
     parser.add_argument('--noise_analysis', type=int, default=0)
     parser.add_argument('--severity_analysis', type=int, default=0)
-    parser.add_argument('--dataset', type=str, default='Prime',
-                        choices=['OCT','Biomarker','Prime'], help='dataset')
+
+    parser.add_argument('--dataset', type=str, default='Competition')
+
+   
+
+
+# * Transformer
+    parser.add_argument('--competition', type=int, default=1)
+
+    parser.add_argument('--img_size', default=384, type=int,
+                        help='size of input images')
+    parser.add_argument('--pretrained', dest='pretrained', action='store_true',
+                        help='use pre-trained model for backbone. default is False. ') 
+    parser.add_argument('--num_class', default=1, type=int,
+                        help="Number of query slots")
+    parser.add_argument('--with_transformer_head', action='store_true',
+                        help='use transformer head attached with backbone swin or cvt. Do not use when training constrastive learning') 
+
+
+    parser.add_argument('--enc_layers', default=1, type=int, 
+                        help="Number of encoding layers in the transformer")
+    parser.add_argument('--dec_layers', default=2, type=int,
+                        help="Number of decoding layers in the transformer")
+    parser.add_argument('--dim_feedforward', default=8192, type=int,
+                        help="Intermediate size of the feedforward layers in the transformer blocks")
+    parser.add_argument('--hidden_dim', default=2048, type=int,
+                        help="Size of the embeddings (dimension of the transformer)")
+    
+    parser.add_argument('--dropout', default=0.1, type=float,
+                        help="Dropout applied in the transformer")
+    parser.add_argument('--nheads', default=4, type=int,
+                        help="Number of attention heads inside the transformer's attentions")
+    parser.add_argument('--pre_norm', action='store_true')
+    parser.add_argument('--position_embedding', default='sine', type=str, choices=('sine'),
+                        help="Type of positional embedding to use on top of the image features")
+    parser.add_argument('--backbone', default='', type=str,
+                        help="Name of the convolutional backbone to use")
+    parser.add_argument('--keep_other_self_attn_dec', action='store_true', 
+                        help='keep the other self attention modules in transformer decoders, which will be removed default.')
+    parser.add_argument('--keep_first_self_attn_dec', action='store_true',
+                        help='keep the first self attention module in transformer decoders, which will be removed default.')
+    parser.add_argument('--keep_input_proj', action='store_true', 
+                        help="keep the input projection layer. Needed when the channel of image features is different from hidden_dim of Transformer layers.")
+
+    parser.add_argument('--amp', action='store_true', default=False,
+                        help='apply amp')
 
     # other setting
     parser.add_argument('--cosine', action='store_true',
@@ -64,8 +107,7 @@ def parse_option():
                         help='path to pre-trained model')
     parser.add_argument('--backbone_training', type=str, default='BCVA',
                         help='manner in which backbone was trained')
-    parser.add_argument('--patient_split', type=int, default=1,
-                        help='choose method')
+  
     opt = parser.parse_args()
 
     # set the path according to the environment
@@ -77,7 +119,7 @@ def parse_option():
         opt.lr_decay_epochs.append(int(it))
 
     opt.model_name = '{}_{}_lr_{}_decay_{}_bsz_{}'.\
-        format(opt.dataset, opt.model, opt.learning_rate, opt.weight_decay,
+        format(opt.dataset, opt.backbone+'-q2l', opt.learning_rate, opt.weight_decay,
                opt.batch_size)
 
     if opt.cosine:
@@ -95,27 +137,8 @@ def parse_option():
         else:
             opt.warmup_to = opt.learning_rate
 
-    if opt.dataset == 'cifar10':
-        opt.n_cls = 10
-    elif opt.dataset == 'cifar100':
-        opt.n_cls = 100
-    elif opt.dataset == 'Ford':
-        opt.n_cls = 3
-    elif opt.dataset == 'Ford_Region':
-        opt.n_cls = 3
-    elif opt.dataset == 'covid_kaggle':
-        opt.n_cls = 4
-    elif opt.dataset == 'qu_dataset':
-        opt.n_cls = 3
-    elif opt.dataset == 'covid_x':
-        opt.n_cls = 2
-    elif opt.dataset == 'covid_x_A':
-        opt.n_cls = 3
-    elif opt.dataset == 'OCT':
-        opt.n_cls = 4
-    elif opt.dataset == 'Prime':
-        opt.n_cls = 2
-    else:
-        raise ValueError('dataset not supported: {}'.format(opt.dataset))
+  
+    if not os.path.isdir(opt.save_folder):
+        os.makedirs(opt.save_folder)  
 
     return opt
