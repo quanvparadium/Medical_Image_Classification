@@ -8,6 +8,7 @@ from config.config_linear_competition import parse_option
 from utils.utils_competition import set_loader_competition, set_model_competition_first, set_optimizer, adjust_learning_rate, accuracy_multilabel
 from sklearn.metrics import average_precision_score,roc_auc_score, classification_report
 import pandas as pd
+from tqdm import tqdm
 
 import os
 def train_OCT_multilabel(train_loader, model, criterion, optimizer, epoch, opt):
@@ -22,12 +23,13 @@ def train_OCT_multilabel(train_loader, model, criterion, optimizer, epoch, opt):
     top1 = AverageMeter()
     device = opt.device
     end = time.time()
-    for idx, (image, bio_tensor) in enumerate(train_loader):
+    # print(train_loader[0])
+    for idx, (image, chest_tensor) in tqdm(enumerate(train_loader)):
         data_time.update(time.time() - end)
 
         images = image.to(device)
 
-        labels = bio_tensor
+        labels = chest_tensor
         labels = labels.float()
         bsz = labels.shape[0]
         labels=labels.to(device)
@@ -71,10 +73,10 @@ def validate_multilabel(val_loader, model, criterion, opt):
     out_list = []
     with torch.no_grad():
         end = time.time()
-        for idx, (image, bio_tensor) in enumerate(val_loader):
+        for idx, (image, chest_tensor) in enumerate(val_loader):
             images = image.float().to(device)
 
-            labels = bio_tensor
+            labels = chest_tensor
             labels = labels.float()
             print(idx)
             label_list.append(labels.squeeze().detach().cpu().numpy())

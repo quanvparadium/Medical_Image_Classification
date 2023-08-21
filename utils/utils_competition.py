@@ -147,7 +147,7 @@ def set_loader_competition(opt):
 
     train_dataset = ChestDataset(csv_path_train,data_path_train,transforms = train_transform)
     # val_dataset = BiomarkerDataset_Competition(csv_path_val,data_path_val,transforms = val_transform)
-    test_dataset = BiomarkerDataset_Competition_Testing(csv_path_test,data_path_test,transforms = val_transform)
+    test_dataset = ChestDataset_Testing(csv_path_test,data_path_test,transforms = val_transform)
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=opt.batch_size, shuffle=True,

@@ -3,6 +3,7 @@ from PIL import Image
 import numpy as np
 import pandas as pd
 import os
+import torch
 
 class ChestDataset(data.Dataset):
     def __init__(self, df, img_dir, transforms):
@@ -41,5 +42,6 @@ class ChestDataset(data.Dataset):
         elevated_diaphragm = self.df.iloc[idx, 19]
         consolidation = self.df.iloc[idx, 20]
         
-        return image, pleural_effusion, nodule, pneumonia, cardiomegaly, hilar_enlargement, fracture_old, fibrosis, aortic_calcification, tortuous_aorta, thickened_pleura, TB, pneumothorax, emphysema, atelectasis, calcification, pulmonary_edema, increased_lung_markings, elevated_diaphragm, consolidation
+        chest_tensor = torch.tensor([pleural_effusion, nodule, pneumonia, cardiomegaly, hilar_enlargement, fracture_old, fibrosis, aortic_calcification, tortuous_aorta, thickened_pleura, TB, pneumothorax, emphysema, atelectasis, calcification, pulmonary_edema, increased_lung_markings, elevated_diaphragm, consolidation])
 
+        return image, chest_tensor
