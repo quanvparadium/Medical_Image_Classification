@@ -16,10 +16,11 @@ class ColonDataset(data.Dataset):
 
         elif df.endswith('.txt'):
             unsave_df = pd.read_csv(df, sep=" ", header=None)
-            label_df = unsave_df[1].str.split(',', expand=True)
-            label_df.columns = [f'column{i+1}' for i in range(label_df.shape[0])]
-            label_df = label_df.astype(dtype=np.float64)
-            self.df = pd.concat([unsave_df[0], label_df], axis=1)
+            # label_df = unsave_df[1].str.split(',', expand=True)
+            # label_df.columns = [f'column{i+1}' for i in range(label_df.shape[0])]
+            # label_df = label_df.astype(dtype=np.float64)
+            # self.df = pd.concat([unsave_df[0], label_df], axis=1)
+            self.df = unsave_df
         else:
             raise Exception("Format errors")
 

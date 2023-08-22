@@ -7,6 +7,7 @@ python training_main/main_linear.py\
  --img_size 384 --hidden_dim 2048 \
  --keep_input_proj --dim_feedforward 8192 \
  --amp\
+ --nshot 1 \
  --train_csv_path './data/Datasets/endo/endo_1-shot_train_exp1.txt'\
  --test_csv_path './endo_val.csv'\
  --train_image_path '/content/drive/MyDrive/Med_Grand_Challenge/MedFMC_train/endo/images'\

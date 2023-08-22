@@ -199,4 +199,5 @@ def main_multilabel_competition():
     else:
         raise ValueError(f"{opt.dataset} is not satisfied (Must in ['Chest_MedFM', 'Colon_MedFM', 'Endo_MedFM'])")
     # Lưu DataFrame thành tệp CSV
-    df.to_csv(f'./prediction_{opt.dataset}.csv', index=False)
+    # df.to_csv(f'./prediction_{opt.dataset}_{opt.nshot}.csv', index=False)
+    df.to_csv(f'/content/drive/MyDrive/prediction_{opt.dataset}_{opt.nshot}.csv', index=False)
