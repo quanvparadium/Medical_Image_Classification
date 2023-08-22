@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import torch.optim as optim
 import os
+import cv2
 from sklearn.metrics import roc_auc_score, f1_score
 import torch.backends.cudnn as cudnn
 from torchvision import transforms, datasets
@@ -12,6 +13,10 @@ from torchvision import transforms, datasets
 
 from datasets.chest import ChestDataset
 from datasets.chest_testing import ChestDataset_Testing
+from datasets.colon import ColonDataset
+from datasets.colon_testing import ColonDataset_Testing
+from datasets.endo import EndoDataset
+from datasets.endo_testing import EndoDataset_Testing
 # from datasets.biomarker_competition_testing import BiomarkerDataset_Competition_Testing
 
 from models.query2label import Qeruy2Label
@@ -89,10 +94,6 @@ def set_model_competition_second(opt):
 
     return backbone, transformer_head, criterion
 
-
-import cv2
-import numpy as np
-
 class TransformRGB(object):
     def __call__(self, img):
         # Chuyển đổi mảng numpy thành tensor PyTorch
@@ -145,10 +146,22 @@ def set_loader_competition(opt):
     csv_path_test = opt.test_csv_path
     data_path_test = opt.test_image_path
 
-    train_dataset = ChestDataset(csv_path_train,data_path_train,transforms = train_transform)
-    # val_dataset = BiomarkerDataset_Competition(csv_path_val,data_path_val,transforms = val_transform)
-    test_dataset = ChestDataset_Testing(csv_path_test,data_path_test,transforms = val_transform)
+    if opt.dataset == "Chest_MedFM":
+        train_dataset = ChestDataset(csv_path_train,data_path_train,transforms = train_transform)
+        # val_dataset = BiomarkerDataset_Competition(csv_path_val,data_path_val,transforms = val_transform)
+        test_dataset = ChestDataset_Testing(csv_path_test,data_path_test,transforms = val_transform)
+    elif opt.dataset == "Colon_MedFM":
+        train_dataset = ColonDataset(csv_path_train,data_path_train,transforms = train_transform)
+        # val_dataset = BiomarkerDataset_Competition(csv_path_val,data_path_val,transforms = val_transform)
+        test_dataset = ColonDataset_Testing(csv_path_test,data_path_test,transforms = val_transform)
+    elif opt.dataset == "Endo_MedFM":
+        train_dataset = EndoDataset(csv_path_train,data_path_train,transforms = train_transform)
+        # val_dataset = BiomarkerDataset_Competition(csv_path_val,data_path_val,transforms = val_transform)
+        test_dataset = EndoDataset_Testing(csv_path_test,data_path_test,transforms = val_transform)
+ 
 
+    else:
+        raise ValueError(f"{opt.dataset} is not satisfied (Must in ['Chest_MedFM', 'Colon_MedFM', 'Endo_MedFM'])")
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=opt.batch_size, shuffle=True,
         num_workers=opt.num_workers, pin_memory=True)

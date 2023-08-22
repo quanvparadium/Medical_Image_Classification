@@ -11,7 +11,7 @@ import pandas as pd
 from tqdm import tqdm
 
 import os
-def train_OCT_multilabel(train_loader, model, criterion, optimizer, epoch, opt):
+def train_MedFM_multilabel(train_loader, model, criterion, optimizer, epoch, opt):
     """one epoch training"""
     # model.eval()
     # classifier.train()
@@ -24,18 +24,17 @@ def train_OCT_multilabel(train_loader, model, criterion, optimizer, epoch, opt):
     device = opt.device
     end = time.time()
     # print(train_loader[0])
-    for idx, (image, chest_tensor) in tqdm(enumerate(train_loader)):
+    for idx, (image, type_tensor) in tqdm(enumerate(train_loader)):
         data_time.update(time.time() - end)
 
         images = image.to(device)
 
-        labels = chest_tensor
+        labels = type_tensor
         labels = labels.float()
         bsz = labels.shape[0]
         labels=labels.to(device)
         # warm-up learning rate
         warmup_learning_rate(opt, epoch, idx, len(train_loader), optimizer)
-
 
         with torch.cuda.amp.autocast(enabled=opt.amp):
             output = model(images)
@@ -73,10 +72,10 @@ def validate_multilabel(val_loader, model, criterion, opt):
     out_list = []
     with torch.no_grad():
         end = time.time()
-        for idx, (image, chest_tensor) in enumerate(val_loader):
+        for idx, (image, type_tensor) in enumerate(val_loader):
             images = image.float().to(device)
 
-            labels = chest_tensor
+            labels = type_tensor
             labels = labels.float()
             print(idx)
             label_list.append(labels.squeeze().detach().cpu().numpy())
@@ -171,7 +170,7 @@ def main_multilabel_competition():
 
             # train for one epoch
             time1 = time.time()
-            loss, acc = train_OCT_multilabel(train_loader, model, criterion,
+            loss, acc = train_MedFM_multilabel(train_loader, model, criterion,
                               optimizer, epoch, opt)
             time2 = time.time()
             print('Train epoch {}, total time {:.2f}, accuracy:{:.2f}, loss:{:.2f}'.format(
@@ -179,15 +178,15 @@ def main_multilabel_competition():
             
             if epoch % opt.save_freq == 0:
                 save_file = os.path.join(
-                    opt.save_folder, 'ckpt_phase_2_epoch_{epoch}.pth'.format(epoch=epoch))
+                    opt.save_folder, 'ckpt_chestMedFM_epoch_{epoch}.pth'.format(epoch=epoch))
                 save_model(model, optimizer, opt, epoch, save_file)
 
 
         out_list = test_multilabel(test_loader, model, criterion, opt)
         prediction = out_list
 
-    df = pd.DataFrame(prediction, columns=['Path (Trial/Image Type/Subject/Visit/Eye/Image Name)',
-                                            'B1', 'B2', 'B3', 'B4', 'B5', 'B6'])
-
+    df = pd.DataFrame(prediction, columns=['Unname: 0', 'Path (Trial/Subject/Image Name)',
+                                            'pleural_effusion',	'nodule', 'pneumonia', 'cardiomegaly', 'hilar_enlargement', 'fracture_old', 'fibrosis', 'aortic_calcification', 'tortuous_aorta', 'thickened_pleura', 'TB', 'pneumothorax', 'emphysema', 'atelectasis', 'calcification', 'pulmonary_edema', 'increased_lung_markings', 'elevated_diaphragm', 'consolidation'])
+                                            # 'B1', 'B2', 'B3', 'B4', 'B5', 'B6'])
     # Lưu DataFrame thành tệp CSV
     df.to_csv('./prediction.csv', index=False)
