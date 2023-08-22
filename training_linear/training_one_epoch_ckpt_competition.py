@@ -185,8 +185,16 @@ def main_multilabel_competition():
         out_list = test_multilabel(test_loader, model, criterion, opt)
         prediction = out_list
 
-    df = pd.DataFrame(prediction, columns=['Unname: 0', 'Path (Trial/Subject/Image Name)',
-                                            'pleural_effusion',	'nodule', 'pneumonia', 'cardiomegaly', 'hilar_enlargement', 'fracture_old', 'fibrosis', 'aortic_calcification', 'tortuous_aorta', 'thickened_pleura', 'TB', 'pneumothorax', 'emphysema', 'atelectasis', 'calcification', 'pulmonary_edema', 'increased_lung_markings', 'elevated_diaphragm', 'consolidation'])
-                                            # 'B1', 'B2', 'B3', 'B4', 'B5', 'B6'])
+    if opt.dataset == "Chest_MedFM":
+        df = pd.DataFrame(prediction, columns=['Path (Trial/Subject/Image Name)',
+                                               'pleural_effusion', 'nodule', 'pneumonia', 'cardiomegaly', 'hilar_enlargement', 'fracture_old', 'fibrosis', 'aortic_calcification', 'tortuous_aorta', 'thickened_pleura', 'TB', 'pneumothorax', 'emphysema', 'atelectasis', 'calcification', 'pulmonary_edema', 'increased_lung_markings', 'elevated_diaphragm', 'consolidation'])
+    elif opt.dataset == "Colon_MedFM":
+        df = pd.DataFrame(prediction, columns=['Path(Trial/Subject/Image Name)',
+                                               'non_tumor', 'tumor'])
+    elif opt.dataset == "Endo_MedFM":
+        df = pd.DataFrame(prediction, columns=['Path(Trial/Subject/Image Name)',
+                                               'ulcer', 'erosion', 'polyp', 'tumor'])
+    else:
+        raise ValueError(f"{opt.dataset} is not satisfied (Must in ['Chest_MedFM', 'Colon_MedFM', 'Endo_MedFM'])")
     # Lưu DataFrame thành tệp CSV
     df.to_csv('./prediction.csv', index=False)

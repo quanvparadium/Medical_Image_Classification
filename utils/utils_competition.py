@@ -158,7 +158,6 @@ def set_loader_competition(opt):
         train_dataset = EndoDataset(csv_path_train,data_path_train,transforms = train_transform)
         # val_dataset = BiomarkerDataset_Competition(csv_path_val,data_path_val,transforms = val_transform)
         test_dataset = EndoDataset_Testing(csv_path_test,data_path_test,transforms = val_transform)
- 
 
     else:
         raise ValueError(f"{opt.dataset} is not satisfied (Must in ['Chest_MedFM', 'Colon_MedFM', 'Endo_MedFM'])")

@@ -9,7 +9,12 @@ class EndoDataset_Testing(data.Dataset):
         print("Dataset: Endo_MedFM_Competition_Testing")
         self.img_dir = img_dir
         self.transforms = transforms
-        self.df = pd.read_csv(df)
+        if df.endswith('.csv'):
+            self.df = pd.read_csv(df)
+        elif df.endswith('.txt'):
+            self.df = pd.read_csv(df, sep=" ", header=None)
+        else:
+            raise Exception("Format errors")
 
     def __len__(self):
         return len(self.df)

@@ -48,7 +48,7 @@ def parse_option():
     parser.add_argument('--severity_analysis', type=int, default=0)
 
     parser.add_argument('--dataset', type=str, default='Competition')
-
+    parser.add_argument('--nshot', type=int, default=1)
    
 
 
