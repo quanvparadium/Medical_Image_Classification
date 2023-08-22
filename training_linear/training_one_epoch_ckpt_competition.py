@@ -133,7 +133,9 @@ def test_multilabel(val_loader, model, criterion, opt):
             # compute output
             with torch.cuda.amp.autocast(enabled=opt.amp):
                 output = model(images)
-                output = torch.round(torch.sigmoid(output))
+                # output = torch.round(torch.sigmoid(output))
+                output = torch.sigmoid(output)
+
 
             
             output = output.squeeze().detach().cpu().numpy().tolist()
@@ -178,7 +180,7 @@ def main_multilabel_competition():
             
             if epoch % opt.save_freq == 0:
                 save_file = os.path.join(
-                    opt.save_folder, 'ckpt_chestMedFM_epoch_{epoch}.pth'.format(epoch=epoch))
+                    opt.save_folder, 'ckpt_{opt.dataset}_epoch_{epoch}.pth'.format(epoch=epoch))
                 save_model(model, optimizer, opt, epoch, save_file)
 
 
