@@ -125,10 +125,10 @@ def test_multilabel(val_loader, model, criterion, opt):
     out_list = []
     with torch.no_grad():
         end = time.time()
-        for idx, (image, img_name) in enumerate(val_loader):
+        for idx, (image, img_name) in tqdm(enumerate(val_loader)):
             images = image.float().to(device)
 
-            print(f"idx:{idx}")
+            # print(f"idx:{idx}")
 
             # compute output
             with torch.cuda.amp.autocast(enabled=opt.amp):
@@ -140,7 +140,7 @@ def test_multilabel(val_loader, model, criterion, opt):
             
             output = output.squeeze().detach().cpu().numpy().tolist()
             row = img_name + output
-            print(f"row:{row}")
+            # print(f"row:{row}")
             out_list.append(row)
 
 
@@ -180,7 +180,7 @@ def main_multilabel_competition():
             
             if epoch % opt.save_freq == 0:
                 save_file = os.path.join(
-                    opt.save_folder, 'ckpt_{opt.dataset}_epoch_{epoch}.pth'.format(epoch=epoch))
+                    opt.save_folder, 'ckpt_{dataset}_epoch_{epoch}.pth'.format(dataset=opt.dataset, epoch=epoch))
                 save_model(model, optimizer, opt, epoch, save_file)
 
 
@@ -199,4 +199,4 @@ def main_multilabel_competition():
     else:
         raise ValueError(f"{opt.dataset} is not satisfied (Must in ['Chest_MedFM', 'Colon_MedFM', 'Endo_MedFM'])")
     # Lưu DataFrame thành tệp CSV
-    df.to_csv('./prediction.csv', index=False)
+    df.to_csv(f'./prediction_{opt.dataset}.csv', index=False)
