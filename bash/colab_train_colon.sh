@@ -1,4 +1,4 @@
-!python training_main/main_linear.py\
+python training_main/main_linear.py\
  --dataset 'Colon_MedFM' \
  --pretrained\
  --competition 1 --backbone "swin_B_384_22k" --with_transformer_head \
