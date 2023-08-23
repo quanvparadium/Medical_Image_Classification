@@ -139,6 +139,8 @@ def test_multilabel(val_loader, model, criterion, opt):
 
             
             output = output.squeeze().detach().cpu().numpy().tolist()
+            if opt.dataset == 'Colon_MedFM':
+                output = [output, 1 - output]
             row = img_name + output
             # print(f"row:{row}")
             out_list.append(row)
