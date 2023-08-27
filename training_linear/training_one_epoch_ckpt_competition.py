@@ -20,9 +20,10 @@ def train_MedFM_multilabel(train_loader, model, criterion, optimizer, epoch, opt
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
-    top1 = AverageMeter()
+    total_acc = AverageMeter()
     device = opt.device
     end = time.time()
+    output_list = []
     # print(train_loader[0])
     for idx, (image, type_tensor) in tqdm(enumerate(train_loader)):
         data_time.update(time.time() - end)
@@ -42,7 +43,7 @@ def train_MedFM_multilabel(train_loader, model, criterion, optimizer, epoch, opt
 
         # update metric
         losses.update(loss.item(), bsz)
-
+        output_list.append(output)
         # SGD
         optimizer.zero_grad()
         loss.backward()
@@ -57,8 +58,10 @@ def train_MedFM_multilabel(train_loader, model, criterion, optimizer, epoch, opt
             print('Train: [{0}][{1}/{2}]\t'.format(
                 epoch, idx + 1, len(train_loader)))
             sys.stdout.flush()
+    losses_train, acc_train = validate_multilabel(train_loader, model, criterion, opt)
+    print(f"BEFORE PRINT LOSS: {losses_train}")
 
-    return losses.avg, top1.avg
+    return losses.avg, acc_train
 
 def validate_multilabel(val_loader, model, criterion, opt):
     """validation"""
@@ -182,24 +185,28 @@ def main_multilabel_competition():
             
             if epoch % opt.save_freq == 0:
                 save_file = os.path.join(
-                    opt.save_folder, 'ckpt_{dataset}_epoch_{epoch}.pth'.format(dataset=opt.dataset, epoch=epoch))
+                    opt.save_folder, 'ckpt_{dataset}_epoch_{epoch}_nshot_{nshot}.pth'.format(dataset=opt.dataset, epoch=epoch, nshot=opt.nshot))
                 save_model(model, optimizer, opt, epoch, save_file)
 
 
         out_list = test_multilabel(test_loader, model, criterion, opt)
         prediction = out_list
-
+    type_data = None
     if opt.dataset == "Chest_MedFM":
         df = pd.DataFrame(prediction, columns=['Path (Trial/Subject/Image Name)',
                                                'pleural_effusion', 'nodule', 'pneumonia', 'cardiomegaly', 'hilar_enlargement', 'fracture_old', 'fibrosis', 'aortic_calcification', 'tortuous_aorta', 'thickened_pleura', 'TB', 'pneumothorax', 'emphysema', 'atelectasis', 'calcification', 'pulmonary_edema', 'increased_lung_markings', 'elevated_diaphragm', 'consolidation'])
+        type_data = "chest"
     elif opt.dataset == "Colon_MedFM":
         df = pd.DataFrame(prediction, columns=['Path(Trial/Subject/Image Name)',
                                                'non_tumor', 'tumor'])
+        type_data = "colon"
     elif opt.dataset == "Endo_MedFM":
         df = pd.DataFrame(prediction, columns=['Path(Trial/Subject/Image Name)',
                                                'ulcer', 'erosion', 'polyp', 'tumor'])
+        type_data = "endo"
     else:
         raise ValueError(f"{opt.dataset} is not satisfied (Must in ['Chest_MedFM', 'Colon_MedFM', 'Endo_MedFM'])")
     # Lưu DataFrame thành tệp CSV
     # df.to_csv(f'./prediction_{opt.dataset}_{opt.nshot}.csv', index=False)
-    df.to_csv(f'/content/drive/MyDrive/prediction_{opt.dataset}_{opt.nshot}.csv', index=False)
+    
+    df.to_csv(f'/content/drive/MyDrive/submit_MedFM/{type_data}/{type_data}_{opt.nshot}-shot_submission.csv', index=False)

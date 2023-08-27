@@ -1,8 +1,8 @@
-python training_main/main_linear.py\
+!python training_main/main_linear.py\
  --dataset 'Endo_MedFM' \
  --pretrained\
- --competition 1 --backbone "swin_B_384_22k" --with_transformer_head \
- --save_folder './save_linear/endo' \
+ --competition 1 --backbone "swin_L_384_22k" --with_transformer_head \
+ --save_folder '/content/drive/MyDrive/save_linear/endo' \
  --num_class 4 --epochs 5 --save_freq 5 --print_freq 50 --batch_size 8 \
  --img_size 384 --hidden_dim 2048 \
  --keep_input_proj --dim_feedforward 8192 \

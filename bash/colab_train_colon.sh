@@ -1,9 +1,9 @@
 python training_main/main_linear.py\
  --dataset 'Colon_MedFM' \
  --pretrained\
- --competition 1 --backbone "swin_B_384_22k" --with_transformer_head \
- --save_folder './save_linear/colon' \
- --num_class 2 --epochs 5 --save_freq 5 --print_freq 50 --batch_size 8 \
+ --competition 1 --backbone "swin_L_384_22k" --with_transformer_head \
+ --save_folder '/content/drive/MyDrive/save_weight/colon' \
+ --num_class 1 --epochs 5 --save_freq 2 --print_freq 50 --batch_size 8 \
  --img_size 384 --hidden_dim 2048 \
  --keep_input_proj --dim_feedforward 8192 \
  --amp\

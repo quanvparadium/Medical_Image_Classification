@@ -93,3 +93,4 @@ def accuracy_multilabel(output,target):
     target = target.detach().cpu().numpy()
     r = roc_auc_score(target,output,multi_class='ovr')
     print(r)
+    return r
