@@ -6,7 +6,7 @@ import time
 import numpy as np
 from config.config_linear_competition import parse_option
 from utils.utils_competition import set_loader_competition, set_model_competition_first, set_optimizer, adjust_learning_rate, accuracy_multilabel
-from sklearn.metrics import average_precision_score,roc_auc_score, classification_report
+from sklearn.metrics import average_precision_score,roc_auc_score, classification_report, f1_score
 import pandas as pd
 from tqdm import tqdm
 
@@ -36,13 +36,15 @@ def evaluate(dataloader, model, criterion, opt):
 
             output = torch.round(torch.sigmoid(output))
         accuracy += (output == labels).float().sum()
-        output_list.append(output.squeeze().detach().cpu().numpy())
-        label_list.append(labels.squeeze().detach().cpu().numpy())
-        
+        # output_list.append(output.squeeze().detach().cpu().numpy())
+        # label_list.append(labels.squeeze().detach().cpu().numpy())
+        output_list = [*output_list, *output.squeeze().detach().cpu().numpy()]
+        label_list = [*label_list, *labels.squeeze().detach().cpu().numpy()]        
         losses.update(loss.item(), bsz)
 
     accuracy = (accuracy / (len_data * opt.num_class))
     roc_auc = roc_auc_score(label_list, output_list, average = 'macro')
+    f1_score = f1_score(label_list, output_list, average = 'macro')
     print("ROC AUC SCORE: ", roc_auc)
     return losses.avg, accuracy, roc_auc
 
