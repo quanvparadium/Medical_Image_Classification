@@ -11,6 +11,40 @@ import pandas as pd
 from tqdm import tqdm
 
 import os
+
+def evaluate(dataloader, model, criterion, opt):
+    model.eval()
+    device = opt.device
+    accuracy = 0
+    # roc_auc = 0
+    # precision = 0
+    # recall = 0
+    len_data = 0
+    output_list = []
+    label_list = []
+    losses = AverageMeter()
+    for idx, (image, label_tensor) in tqdm(enumerate(dataloader)):
+        images = image.to(device) 
+        labels = label_tensor.float() 
+        bsz = labels.shape[0] 
+        len_data += bsz
+        labels=labels.to(device)
+        with torch.cuda.amp.autocast(enabled=opt.amp):
+            output = model(images)
+            loss = criterion(output, labels)
+
+            output = torch.round(torch.sigmoid(output))
+        accuracy += (output == labels).float().sum()
+        output_list.append(output.squeeze().detach().cpu().numpy())
+        label_list.append(labels.squeeze().detach().cpu().numpy())
+        
+        losses.update(loss.item(), bsz)
+
+    accuracy = (accuracy / (len_data * opt.num_class))
+    roc_auc = roc_auc_score(label_list, output_list, average = 'macro')
+    print("ROC AUC SCORE: ", roc_auc)
+    return losses.avg, accuracy, roc_auc
+
 def train_MedFM_multilabel(train_loader, model, criterion, optimizer, epoch, opt):
     """one epoch training"""
     # model.eval()
@@ -20,10 +54,8 @@ def train_MedFM_multilabel(train_loader, model, criterion, optimizer, epoch, opt
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
-    total_acc = AverageMeter()
     device = opt.device
     end = time.time()
-    output_list = []
     # print(train_loader[0])
     for idx, (image, type_tensor) in tqdm(enumerate(train_loader)):
         data_time.update(time.time() - end)
@@ -40,10 +72,9 @@ def train_MedFM_multilabel(train_loader, model, criterion, optimizer, epoch, opt
         with torch.cuda.amp.autocast(enabled=opt.amp):
             output = model(images)
             loss = criterion(output, labels)
-
+            
         # update metric
         losses.update(loss.item(), bsz)
-        output_list.append(output)
         # SGD
         optimizer.zero_grad()
         loss.backward()
@@ -58,10 +89,8 @@ def train_MedFM_multilabel(train_loader, model, criterion, optimizer, epoch, opt
             print('Train: [{0}][{1}/{2}]\t'.format(
                 epoch, idx + 1, len(train_loader)))
             sys.stdout.flush()
-    losses_train, acc_train = validate_multilabel(train_loader, model, criterion, opt)
-    print(f"BEFORE PRINT LOSS: {losses_train}")
-
-    return losses.avg, acc_train
+    loss_eval, acc_eval, roc_auc = evaluate(train_loader, model, criterion, opt)
+    return losses.avg, acc_eval
 
 def validate_multilabel(val_loader, model, criterion, opt):
     """validation"""
@@ -80,16 +109,12 @@ def validate_multilabel(val_loader, model, criterion, opt):
 
             labels = type_tensor
             labels = labels.float()
-            print(idx)
             label_list.append(labels.squeeze().detach().cpu().numpy())
             labels = labels.to(device)
             bsz = labels.shape[0]
 
             # forward
             # output = classifier(model.encoder(images))
-
-            loss = criterion(output, labels)
-            output = torch.round(torch.sigmoid(output))
 
             # compute output
             with torch.cuda.amp.autocast(enabled=opt.amp):
@@ -108,8 +133,8 @@ def validate_multilabel(val_loader, model, criterion, opt):
 
     label_array = np.array(label_list)
     out_array = np.array(out_list)
-    out_array = np.concatenate(out_list, axis=0)
-    r = roc_auc_score(label_array, out_array, average='macro')
+    # out_array = np.concatenate(out_list, axis=0)n
+    # r = roc_auc_score(label_array, out_array, average='macro')
 
 
     return losses.avg, r
@@ -155,7 +180,9 @@ def test_multilabel(val_loader, model, criterion, opt):
 
     # out_array = np.array(out_list)
     # out_array = np.concatenate(out_list, axis=0)
-
+    loss_test, acc_test, roc_auc_test = evaluate(test_loader, model, criterion, opt)
+    print("ACCURACY TEST: ", acc_test)
+    print("LOSS TEST: ", loss_test)
     return out_list
 
 def main_multilabel_competition():
@@ -188,7 +215,10 @@ def main_multilabel_competition():
                     opt.save_folder, 'ckpt_{dataset}_epoch_{epoch}_nshot_{nshot}.pth'.format(dataset=opt.dataset, epoch=epoch, nshot=opt.nshot))
                 save_model(model, optimizer, opt, epoch, save_file)
 
-
+        if val_loader:
+            loss_val, acc_val, roc_auc_val = evaluate(val_loader, model, criterion, opt)
+            print("ACCURACY VALIDATION: ", acc_val)
+            print("LOSS VALIDATION: ", loss_val)
         out_list = test_multilabel(test_loader, model, criterion, opt)
         prediction = out_list
     type_data = None
