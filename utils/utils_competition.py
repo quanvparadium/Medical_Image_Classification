@@ -148,15 +148,15 @@ def set_loader_competition(opt):
 
     if opt.dataset == "Chest_MedFM":
         train_dataset = ChestDataset(csv_path_train,data_path_train,transforms = train_transform)
-        # val_dataset = BiomarkerDataset_Competition(csv_path_val,data_path_val,transforms = val_transform)
+        val_dataset = ChestDataset(csv_path_val,data_path_val,transforms = val_transform)
         test_dataset = ChestDataset_Testing(csv_path_test,data_path_test,transforms = val_transform)
     elif opt.dataset == "Colon_MedFM":
         train_dataset = ColonDataset(csv_path_train,data_path_train,transforms = train_transform)
-        # val_dataset = BiomarkerDataset_Competition(csv_path_val,data_path_val,transforms = val_transform)
+        val_dataset = ColonDataset(csv_path_val,data_path_val,transforms = val_transform)
         test_dataset = ColonDataset_Testing(csv_path_test,data_path_test,transforms = val_transform)
     elif opt.dataset == "Endo_MedFM":
         train_dataset = EndoDataset(csv_path_train,data_path_train,transforms = train_transform)
-        # val_dataset = BiomarkerDataset_Competition(csv_path_val,data_path_val,transforms = val_transform)
+        val_dataset = EndoDataset(csv_path_val,data_path_val,transforms = val_transform)
         test_dataset = EndoDataset_Testing(csv_path_test,data_path_test,transforms = val_transform)
 
     else:
@@ -165,10 +165,10 @@ def set_loader_competition(opt):
         train_dataset, batch_size=opt.batch_size, shuffle=True,
         num_workers=opt.num_workers, pin_memory=True)
     
-    val_loader = None
-    # val_loader = torch.utils.data.DataLoader(
-    #     val_dataset, batch_size=opt.batch_size, shuffle=True,
-    #     num_workers=opt.num_workers, pin_memory=True)
+    # val_loader = None
+    val_loader = torch.utils.data.DataLoader(
+        val_dataset, batch_size=opt.batch_size, shuffle=True,
+        num_workers=opt.num_workers, pin_memory=True)
 
     test_loader = torch.utils.data.DataLoader(
         test_dataset, batch_size=1, shuffle=True,

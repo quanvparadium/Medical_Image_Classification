@@ -9,6 +9,8 @@ python training_main/main_linear.py\
  --amp\
  --nshot 1 \
  --train_csv_path './data/Datasets/chest/chest_1-shot_train_exp1.txt'\
+ --val_csv_path './data/Datasets/chest/chest_1-shot_val_exp1.txt' \
  --test_csv_path './chest_val.csv'\
  --train_image_path '/content/drive/MyDrive/Med_Grand_Challenge/MedFMC_train/chest/images'\
+ --val_image_path '/content/drive/MyDrive/Med_Grand_Challenge/MedFMC_train/chest/images' \
  --test_image_path '/content/drive/MyDrive/Med_Grand_Challenge/MedFMC_val/chest/images'

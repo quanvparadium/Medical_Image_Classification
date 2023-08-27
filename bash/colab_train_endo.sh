@@ -9,6 +9,8 @@
  --amp\
  --nshot 1 \
  --train_csv_path './data/Datasets/endo/endo_1-shot_train_exp1.txt'\
+ --val_csv_path './data/Datasets/endo/endo_1-shot_val_exp1.txt' \
  --test_csv_path './endo_val.csv'\
  --train_image_path '/content/drive/MyDrive/Med_Grand_Challenge/MedFMC_train/endo/images'\
+ --val_image_path '/content/drive/MyDrive/Med_Grand_Challenge/MedFMC_train_endo/images' \
  --test_image_path '/content/drive/MyDrive/Med_Grand_Challenge/MedFMC_val/endo/images'

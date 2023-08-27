@@ -13,6 +13,7 @@ from tqdm import tqdm
 import os
 
 def evaluate(dataloader, model, criterion, opt):
+    print("BEGIN EVALUATION ...")
     model.eval()
     device = opt.device
     accuracy = 0
@@ -180,9 +181,6 @@ def test_multilabel(val_loader, model, criterion, opt):
 
     # out_array = np.array(out_list)
     # out_array = np.concatenate(out_list, axis=0)
-    loss_test, acc_test, roc_auc_test = evaluate(test_loader, model, criterion, opt)
-    print("ACCURACY TEST: ", acc_test)
-    print("LOSS TEST: ", loss_test)
     return out_list
 
 def main_multilabel_competition():
